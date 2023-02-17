@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import certifi
 from bs4 import BeautifulSoup
-import sentence_transformers as st
+from sentence_transformers import SentenceTransformer
 
 
 def get_gcf_tutorial_lessons(db, mongo_id: str) -> list:
@@ -11,7 +11,7 @@ def get_gcf_tutorial_lessons(db, mongo_id: str) -> list:
 
 	# Define the query to get the desired tutorial
 	query = {
-		#"_id": ObjectId("5b10486a6d5ad52ca4b700fe"),
+		"_id": ObjectId("5b10486a6d5ad52ca4b700fe"),
 		"published": "true",
 		"translation": "false"
 	}
@@ -52,7 +52,7 @@ def get_gcf_lessons_html(db, lesson_ids: list[ObjectId]) -> list:
 	return lessons_htmls
 
 
-def remove_tags(html):
+def remove_tags(html: str) -> str:
     # parse html content
     soup = BeautifulSoup(html, "html.parser")
     for data in soup(['style', 'script']):
@@ -62,8 +62,10 @@ def remove_tags(html):
     return ' '.join(soup.stripped_strings)
 
 
-def transform_lessons_to_vector(units: list) -> str:
-	return ""
+def transform_lessons_to_vector(units_str: str):
+	model = SentenceTransformer("all-MiniLM-L6-v2")
+	embedding = model.encode(units_str)
+	return embedding
 
 
 def connect_mongo_cluster():
@@ -73,10 +75,16 @@ def connect_mongo_cluster():
 	db = cluster["gcfglobal"]
 	return db
 
+def store_vector_to_db() -> None:
+	pass
+
 
 if __name__ == "__main__":
 	db = connect_mongo_cluster()
 	lesson_ids: list = get_gcf_tutorial_lessons(db, "")
 	lessons_htmls: list = get_gcf_lessons_html(db, lesson_ids)
+	htmls: list = [remove_tags(html) for html in lessons_htmls]
+	text: str = " ".join(htmls)
+	vector = transform_lessons_to_vector(text)
 
-	print(lessons_htmls)
+	print(vector)
