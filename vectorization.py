@@ -1,13 +1,15 @@
-
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import certifi
-from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import sentence_transformers as st
 
 
 def get_gcf_tutorial_lessons(db, mongo_id: str) -> list:
+	"""Funciton to get the specified tutorial from a mongo database
+	based on the string passed as a parameter"""
+
+	# Define the query to get the desired tutorial
 	query = {
 		#"_id": ObjectId("5b10486a6d5ad52ca4b700fe"),
 		"published": "true",
@@ -30,7 +32,10 @@ def get_gcf_tutorial_lessons(db, mongo_id: str) -> list:
 	return lesson_ids
 
 
-def get_gcf_lessons_html(db, lesson_ids: list) -> list:
+def get_gcf_lessons_html(db, lesson_ids: list[ObjectId]) -> list:
+	"""Function to get the specified lessons from a mongo database
+	based on the list of ObjectId items passed as parameters"""
+
 	# Define the lesson collection to use for the query
 	lesson_collection = db.lesson
 

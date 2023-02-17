@@ -1,0 +1,7 @@
+pymongo
+bson
+certifi
+bs4
+sentence_transformers
+pandas
+google-cloud-bigquery
