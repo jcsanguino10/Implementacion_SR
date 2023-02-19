@@ -2,6 +2,6 @@ pymongo
 bson
 certifi
 bs4
-sentence_transformers
+sentence-transformers
 pandas
 google-cloud-bigquery
