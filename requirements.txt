@@ -1,7 +1,5 @@
 pymongo
-bson
 certifi
 bs4
 sentence-transformers
-pandas
 google-cloud-bigquery
