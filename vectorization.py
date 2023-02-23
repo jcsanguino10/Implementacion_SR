@@ -59,15 +59,10 @@ def get_gcf_tutorial_by_id(db: Database, mongo_id: str) -> dict:
 
 	return tutorial
 
-def get_tutorial_information(tutorial: dict) -> dict:
+def get_tutorial_information(tutorial: dict) -> list:
 	"""Get important attributes from a tutorial"""
 
-	attributes = {
-		"_id": str(tutorial["_id"]),
-		"language": tutorial["language"],
-	}
-
-	return attributes
+	return [str(tutorial["_id"]), tutorial["language"]]
 
 
 def get_gcf_tutorial_lesson_ids(tutorial: dict) -> list[str]:
@@ -146,7 +141,7 @@ def initial_vectorization(db: Database):# -> list[ndarray]:			# TODO
 	all_tutorials: list[dict] = get_all_gcf_tutorials(db)
 
 	# Get the necessary attributes of all tutorials
-	all_tutorials_attributes: list[dict] = [get_tutorial_information(tutorial) for tutorial in all_tutorials]
+	all_tutorials_attributes: list[list[str]] = [get_tutorial_information(tutorial) for tutorial in all_tutorials]
 	#print(all_tutorials_attributes)
 
 	# For each tutorial get the list of all the lessons in that tutorial
@@ -214,6 +209,6 @@ if __name__ == "__main__":
 
 """
 
-tutorial_id, language, translation
+tutorial_id, language, vector
 
 """
