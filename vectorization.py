@@ -4,10 +4,11 @@ from bson.objectid import ObjectId
 from functools import reduce
 from pymongo import MongoClient
 from pymongo.database import Database
-from numpy import ndarray
-#from sentence_transformers import SentenceTransformer
+from numpy import ndarray, array2string, fromstring
+from sentence_transformers import SentenceTransformer
 import script_big_query as sbq
 from typing import Generator
+import csv
 
 
 def mock_vectorization() -> Generator[str, None, None]:
@@ -114,27 +115,75 @@ def remove_tags(html: str) -> str:
     return ' '.join(soup.stripped_strings)
 
 
-def transform_str_to_vector(lessons_str: str) -> ndarray:
+def transform_str_to_vector_bytes(lessons_str: str) -> str:
 	# Transform a str to vector
-	model = SentenceTransformer("paraphrase-multiligual-mpnet-base-v2")
+
+	model = SentenceTransformer("all-MiniLM-L6-v2")
 	embedding = model.encode(lessons_str)
-	return embedding
+	embedding_str = array2string(embedding, separator=';')[1:-1].replace('\n', '')
+	print(type(embedding))
+	return embedding_str
 
 
-# TODO
-def create_vector_csv(vectors: list) -> None:
-	path = ""
-	path = "../../../../Downloads"
-	with open(f"{path if path else ''}/vector_collection.csv", "w") as file:
-		file.write("id, vector\n")
-		pass
-# TODO
-def append_vector_to_csv() -> None:
-	with open("vector_collection.csv", "a"):
-		pass
+def create_vector_csv(attributes: list[list[str]], vectors: list[str]) -> None:
+	"""Create a csv from all the attributes and vectors passed as parameters"""
+
+	with open("data/vector_collection.csv", "w") as file:
+		file.write("id, language, vector\n")
+		for att, vec in zip(attributes, vectors):
+			file.write(f"{att[0]}, {att[1]}, {vec}\n")
 
 
-def initial_vectorization(db: Database):# -> list[ndarray]:			# TODO
+def append_vector_to_csv(attributes: list[str], vector: str) -> None:
+	"""Append attributes and a vector to the csv"""
+
+	with open("data/vector_collection.csv", "a") as file:
+		file.write(f"{attributes[0]}, {attributes[1]}, {vector}\n")
+
+
+def read_vector_bytes(byte_seq: str) -> ndarray:
+	"""Read a vector from a byte sequence"""
+	return fromstring(byte_seq, sep=';')
+
+
+def update_vector_by_id_csv(id: str, vector: str) -> None:
+	"""Update a vector in the csv by its id"""
+
+	# Load the csv into a list of lists
+	with open("data/vector_collection.csv", "r") as file:
+		reader = csv.reader(file)
+		vector_list = list(reader)
+
+	# Update the vector
+	for element in vector_list:
+		if element[0] == id:
+			element[2] = vector
+
+	# Write the updated list to the csv
+	with open("data/vector_collection.csv", "w") as file:
+		writer = csv.writer(file)
+		writer.writerows(vector_list)
+
+
+def load_vector_csv() -> list[list[str]]:
+	"""Load the vector csv into a list of lists"""
+
+	with open("data/vector_collection.csv", "r") as file:
+		reader = csv.reader(file)
+		vector_list = list(reader)
+
+		for element in vector_list:
+			print(element)
+			print("\n\n")
+
+		for element in vector_list:
+			print(read_vector_bytes(element[2]))
+			print("\n\n")
+
+	return vector_list
+
+
+def initial_vectorization(db: Database) -> None:
 	"""Initial vectorization of all the lessons in the database"""
 
 	# Get all tutorials
@@ -167,38 +216,35 @@ def initial_vectorization(db: Database):# -> list[ndarray]:			# TODO
 	# For each text in the list <all_texts> transform it into a vector
 	# and store it in a list
 	generator = mock_vectorization()
-	all_vectors = [next(generator) for text in all_texts] # TODO
+	all_vectors: list[str] = [transform_str_to_vector_bytes(text) for text in all_texts]
 	#print(all_vectors)
 
 	print(len(all_tutorials_attributes) == len(all_vectors))
 
-
-	# TODO: implement data saving into csv
-
-	return all_vectors
+	# Create the csv file with the attributes and vectors
+	create_vector_csv(all_tutorials_attributes, all_vectors)
 
 
-def update_vector_by_id(db: Database, mongo_id: str):# -> ndarray:		# TODO
+def update_vector_by_id(db: Database, mongo_id: str) -> None:
 	tutorial: dict = get_gcf_tutorial_by_id(db, mongo_id)
 	tutorial_attributes = get_tutorial_information(tutorial)
 	lesson_ids: list = get_gcf_tutorial_lesson_ids(tutorial)
 	lessons_htmls: list = get_gcf_lessons_html(db, lesson_ids)
 	plain_text_html: list = [remove_tags(html) for html in lessons_htmls]
 	text: str = " ".join(plain_text_html)
-
-	generator = mock_vectorization()
-	vector = next(generator)				# TODO
-	return vector
+	vector = transform_str_to_vector_bytes(text)
+	update_vector_by_id_csv(mongo_id, vector)
 
 
 
 if __name__ == "__main__":
 	db = connect_mongo_cluster()
-	vector = update_vector_by_id(db, "5b1048696d5ad52ca4b700d1")
-	#init_vector_list = initial_vectorization(db)
-
-	print(vector)
-	#print(init_vector_list)
+	init_vector_list = initial_vectorization(db)
+	update_vector_by_id(db, "5b1048696d5ad52ca4b700d1")
+	load_vector_csv()
+	input()
+	update_vector_by_id(db, "5b1048696d5ad52ca4b700d1")
+	load_vector_csv()
 
 
 
