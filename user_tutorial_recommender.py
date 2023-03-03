@@ -27,6 +27,14 @@ def calulate_vector_similarities(user_mean, vector_ids: list[str], *vectors: nda
 	return sorted_cosines
 
 
+
 if __name__ == "__main__":
 	#calulate_vector_similarities()
 	pass
+
+
+
+# Este es el URL -> a que curso pertenece
+
+# Hay dimension que se llama "course_name" dentro de "page_view_lesson"
+# pymongo se llama "title"

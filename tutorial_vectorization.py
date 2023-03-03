@@ -40,7 +40,7 @@ def get_all_gcf_tutorials(db: Database) -> list[dict]:
 
 def get_gcf_tutorial_by_id(db: Database, mongo_id: str) -> dict:
 	"""Funciton to get the specified tutorial from a mongo database
-	based on the string passed as a parameter"""
+	based on the id passed as a parameter"""
 
 	# Define the query to get the desired tutorial
 	query = {
@@ -58,6 +58,28 @@ def get_gcf_tutorial_by_id(db: Database, mongo_id: str) -> dict:
 	tutorial = list(tutorial_collection.find(query).limit(1))[0]
 
 	return tutorial
+
+
+def get_gcf_tutorial_by_title(db: Database, title: str) -> dict:
+	"""Function to get the specified tutorial from a mongo database
+	bvased on the title passed as a parameter"""
+
+	# Define the queryto get the desired tutorial
+	query = {
+		"title": title,
+		"published": "true",
+		"translation": "false"
+	}
+
+	tutorial_collection = db.tutorial
+
+	# Query desired tutorial from mongo
+	# Turn the cursor into a list and get the only element
+	# This is necessary because that's the only way to access its attributes
+	tutorial = list(tutorial_collection.find(query).limit(1))[0]
+
+	return tutorial
+
 
 def get_tutorial_information(tutorial: dict) -> list:
 	"""Get important attributes from a tutorial"""
