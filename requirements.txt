@@ -4,3 +4,5 @@ bs4
 sentence-transformers
 google-cloud-bigquery
 pandas
+numpy
+scipy
