@@ -28,9 +28,10 @@ def get_tutorial_vectors(tutorial_ids: list) -> ndarray:
 	"""Get the vectors of a tutorials from csv"""
 
 	df = pd.read_csv("data/vector_collection.csv", index_col=0)
-
+	print(df)
+	print(df.columns)
 	# Get the vectors from the df that have an id in the tutorial_ids list
-	vectors = df.loc[tutorial_ids, ["id", "vector"]].to_numpy()
+	vectors = df.loc[tutorial_ids, ["id", "vector"]].to_numpy()					# TODO Fix
 
 	return vectors
 
@@ -38,14 +39,13 @@ def get_tutorial_vectors(tutorial_ids: list) -> ndarray:
 def get_ids_and_vectors_from_course_names(db_bigquery: Client, db_mongo: Database, user: str) -> list[tuple[str, float]]:
 	"""Get the ids and vectors from a list of course names"""
 
-	user_courses: pd.DataFrame = execute_all_course_names_from_user(db_bigquery, user)
-	user_course_names = user_courses.values.tolist()
+	user_course_names = execute_all_course_names_from_user(db_bigquery, user)
 
 	# Get the tutorials from the course names
 	user_tutorials = get_gcf_tutorials_by_titles(db_mongo, user_course_names)
 	user_tutorial_ids = [str(tutorial["_id"]) for tutorial in user_tutorials]
 	user_tutorial_vectors: ndarray = get_tutorial_vectors(user_tutorial_ids)
-	user_vectors = [read_vector_bytes(vector[:, 1:]) for vector in user_tutorial_vectors]
+	user_vectors = [read_vector_bytes(vector[1]) for vector in user_tutorial_vectors]
 	user_mean_vec: ndarray = find_vector_average(*user_vectors)
 	user_mean_vector: ndarray = array(user_mean_vec)
 

@@ -10,7 +10,7 @@ from gcf_mongo_queries import get_all_gcf_tutorials, get_gcf_tutorial_by_id, con
 from vector_operations import read_vector_bytes
 
 
-def mock_vectorization() -> Generator[str, None, None]:
+def vector_counter() -> Generator[str, None, None]:
 	num = 0
 	while True:
 		yield str(num)
@@ -28,7 +28,7 @@ def get_gcf_tutorial_lesson_ids(tutorial: dict) -> list[str]:
 
 	# From the "units" list attribute, get each lesson and get the ids
 	# that are in that lesson --> result = a list of lists of ids
-	all_lessons = [lesson["ids"].split(",") for lesson in tutorial["units"]]
+	all_lessons = [lesson["ids"].split(",") for lesson in tutorial["units"] if lesson["ids"]]
 
 	# Merge the previous list into a single list with all ids
 	merged_list = reduce(lambda x, y: x + y, all_lessons) if all_lessons else []
@@ -52,7 +52,7 @@ def transform_str_to_vector_bytes(lessons_str: str) -> str:
 	model = SentenceTransformer("all-MiniLM-L6-v2")
 	embedding = model.encode(lessons_str)
 	embedding_str = array2string(embedding, separator=';')[1:-1].replace('\n', '')
-	print(type(embedding))
+	print("Vector transformed successfully")
 	return embedding_str
 
 
@@ -64,7 +64,7 @@ def transform_attributes_to_str(attributes: list[str]) -> str:
 def create_vector_csv(attributes: list[list[str]], vectors: list[str]) -> None:
 	"""Create a csv from all the attributes and vectors passed as parameters"""
 
-	with open("data/vector_collection.csv", "w") as file:
+	with open("./data/vector_collection.csv", "w") as file:
 		file.write("id,language,vector\n")
 		for att, vec in zip(attributes, vectors):
 			file.write(f"{transform_attributes_to_str(att)},{vec}\n")
@@ -73,7 +73,7 @@ def create_vector_csv(attributes: list[list[str]], vectors: list[str]) -> None:
 def get_vector_csv() -> list[list[str]]:
 	"""Get all the vectors from the csv"""
 
-	with open("data/vector_collection.csv", "r") as file:
+	with open("./data/vector_collection.csv", "r") as file:
 		reader = csv.reader(file)
 		vector_list = list(reader)
 
@@ -83,7 +83,7 @@ def get_vector_csv() -> list[list[str]]:
 def append_vector_to_csv(attributes: list[str], vector: str) -> None:
 	"""Append attributes and a vector to the csv"""
 
-	with open("data/vector_collection.csv", "a") as file:
+	with open("./data/vector_collection.csv", "a") as file:
 		file.write(f"{transform_attributes_to_str(attributes)},{vector}\n")
 
 
@@ -91,7 +91,7 @@ def delete_vector_by_id_csv(mongo_id: str) -> None:
 	"""Delete a vector from the csv by its id"""
 
 	# Load the csv into a list of lists
-	with open("data/vector_collection.csv", "r") as file:
+	with open("./data/vector_collection.csv", "r") as file:
 		reader = csv.reader(file)
 		vector_list = list(reader)
 
@@ -102,7 +102,7 @@ def delete_vector_by_id_csv(mongo_id: str) -> None:
 			break
 
 	# Write the updated list to the csv
-	with open("data/vector_collection.csv", "w") as file:
+	with open("./data/vector_collection.csv", "w") as file:
 		writer = csv.writer(file)
 		writer.writerows(vector_list)
 
@@ -117,7 +117,7 @@ def update_vector_by_id_csv(mongo_id: str, attributes: list[str], vector: str) -
 def load_vector_csv() -> list[list[str]]:
 	"""Load the vector csv into a list of lists"""
 
-	with open("data/vector_collection.csv", "r") as file:
+	with open("./data/vector_collection.csv", "r") as file:
 		reader = csv.reader(file)
 		vector_list = list(reader)
 
@@ -145,7 +145,7 @@ def initial_vectorization(db: Database) -> None:
 	# For each tutorial get the list of all the lessons in that tutorial
 	# So for each tutorial there will be a list of lessons
 	# Resulting in a list of lists
-	all_tutorials_lessons: list[list[str]] = [get_gcf_tutorial_lesson_ids(tutorial) for tutorial in all_tutorials]
+	all_tutorials_lessons: list[list[str]] = [get_gcf_tutorial_lesson_ids(tutorial) for tutorial in all_tutorials if tutorial]
 	#print(all_tutorials_lessons)
 
 	# For each list in the <all_tutotrials_lessons> list get the list of htmls of each lesson

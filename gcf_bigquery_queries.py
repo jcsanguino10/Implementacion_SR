@@ -1,25 +1,26 @@
-from pandas import DataFrame
-from google.cloud import bigquery
+from google.cloud.bigquery import Client, QueryJob
+from functools import reduce
 
 
-def connect_bigquery(filename: str="") -> bigquery.Client:
+def connect_bigquery(filename: str="") -> Client:
     """Connection to BigQuery client"""
     # Create a Client object to connect to BigQuery
 
     filename = filename if filename else "rsuniandes-2708b665443f.json"
-    client = bigquery.Client.from_service_account_json(f"../credentials/{filename}")
+    client = Client.from_service_account_json(f"../credentials/{filename}")
 
     print("Connection successfully established")
 
     return client
 
 
-def execute_query(client: bigquery.Client, query: str) -> DataFrame:
+def execute_query(client: Client, qr: str) -> list[str]:
     """Execute a query through the big query client"""
-    return client.query(query).to_dataframe()
+    query = client.query(qr)
+    return transform_query_to_list(query)
 
 
-def execute_all_page_locations(client: bigquery.Client) -> DataFrame:
+def execute_all_page_locations(client: Client) -> list[str]:
     """Query that returns all the page_locations from page_view_lesson events"""
 
     QUERY_ALL_PAGE_LOCATIONS = """
@@ -30,10 +31,11 @@ def execute_all_page_locations(client: bigquery.Client) -> DataFrame:
     WHERE event.event_name = 'page_view_lesson';
     """
 
-    return client.query(QUERY_ALL_PAGE_LOCATIONS).to_dataframe()
+    query = client.query(QUERY_ALL_PAGE_LOCATIONS)
+    return transform_query_to_list(query)
 
 
-def execute_all_page_locations_per_user(client: bigquery.Client, user: str) -> DataFrame:
+def execute_all_page_locations_per_user(client: Client, user: str) -> list[str]:
     """Query that returns all the urls visited by a specific user"""
 
     QUERY_ALL_PAGE_LOCATIONS_PER_PSEUDO_ID = f"""
@@ -45,10 +47,11 @@ def execute_all_page_locations_per_user(client: bigquery.Client, user: str) -> D
     AND user_pseudo_id = '{user}';
     """
 
-    return client.query(QUERY_ALL_PAGE_LOCATIONS_PER_PSEUDO_ID).to_dataframe()
+    query = client.query(QUERY_ALL_PAGE_LOCATIONS_PER_PSEUDO_ID)
+    return transform_query_to_list(query)
 
 
-def execute_all_users_3_distinct_urls(client: bigquery.Client) -> DataFrame:
+def execute_all_users_3_distinct_urls(client: Client) -> list[str]:
     """Query that returns all the users that have visited 3 or more distinct urls with
     its respective count of distinc urls"""
 
@@ -63,10 +66,11 @@ def execute_all_users_3_distinct_urls(client: bigquery.Client) -> DataFrame:
     ORDER BY courses_number ASC;
     """
 
-    return client.query(QUERY_ALL_USERS_3_DISTINCT_URLS).to_dataframe()
+    query = client.query(QUERY_ALL_USERS_3_DISTINCT_URLS)
+    return transform_query_to_list(query)
 
 
-def execute_all_course_names(client: bigquery.Client) -> DataFrame:
+def execute_all_course_names(client: Client) -> list[str]:
     """Query that returns all the course names from page_view_lesson events"""
 
     QUERY_ALL_COURSE_NAMES = """
@@ -77,9 +81,11 @@ def execute_all_course_names(client: bigquery.Client) -> DataFrame:
     WHERE event.event_name = 'page_view_lesson';
     """
 
-    return client.query(QUERY_ALL_COURSE_NAMES).to_dataframe()
+    query = client.query(QUERY_ALL_COURSE_NAMES)
+    return transform_query_to_list(query)
 
-def execute_all_course_names_from_user(client: bigquery.Client, user: str) -> DataFrame:
+
+def execute_all_course_names_from_user(client: Client, user: str) -> list[str]:
     """Query that returns all the course names from page_view_lesson events"""
 
     QUERY_ALL_COURSE_NAMES_FROM_USER = f"""
@@ -88,10 +94,16 @@ def execute_all_course_names_from_user(client: bigquery.Client, user: str) -> Da
       CROSS JOIN UNNEST(event.event_params) AS expanded
         ON expanded.key = "course_name"
     WHERE event.event_name = 'page_view_lesson'
-    AND user_pseudo_id = '{user}'';
+    AND user_pseudo_id = '{user}';
     """
 
-    return client.query(QUERY_ALL_COURSE_NAMES_FROM_USER).to_dataframe()
+    query = client.query(QUERY_ALL_COURSE_NAMES_FROM_USER)
+    return transform_query_to_list(query)
+
+
+def transform_query_to_list(query: QueryJob) -> list[str]:
+    query_list = [list(row) for row in query]
+    return list(reduce(lambda x, y: x + y, query_list))
 
 
 if __name__ == "__main__":
@@ -102,6 +114,7 @@ if __name__ == "__main__":
 
     print("\nStart Execute all page locations per user")
     print(execute_all_page_locations_per_user(connection, "922293838.1677754973"))
+    #print(execute_all_course_names_from_user(connection, "922293838.1677754973"))
     print("Done Execute all page locations per user\n")
 
     print("\nStart Execute all user 3 distinct urls")

@@ -20,7 +20,7 @@ def get_all_gcf_tutorials(db: Database) -> list[dict]:
 	}
 
 	tutorial_collection = db.tutorial
-	tutorials = list(tutorial_collection.find(query).limit(10))		# TODO: Remove limit
+	tutorials = list(tutorial_collection.find(query))
 
 	return tutorials
 
@@ -109,7 +109,16 @@ def get_gcf_lessons_html(db: Database, lesson_ids: list[str]) -> list[str]:
 
 	lessons = list(lesson_collection.find(query))
 
+	# for lesson in lessons:
+	# 	try:
+	# 		x = lesson["publish"]["pages"]["1"]
+
+	# 	except:
+	# 		print("\n\n\n")
+	# 		print(lesson)
+	# 		print("\n\n\n")
+
 	# Get the htmls which are in publish:pages:1 for all lessons
-	lessons_htmls = [lesson["publish"]["pages"]["1"] for lesson in lessons]
+	lessons_htmls = [lesson["publish"]["pages"]["1"] for lesson in lessons if lesson["publish"]]
 
 	return lessons_htmls
