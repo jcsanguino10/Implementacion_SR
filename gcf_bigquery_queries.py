@@ -109,11 +109,11 @@ def transform_query_to_list(query: QueryJob) -> list[str]:
 if __name__ == "__main__":
     connection = connect_bigquery()
     print("\nStart Execute all page locations")
-    print(execute_all_page_locations(connection))
+    #print(execute_all_page_locations(connection))
     print("Done Execute all page locations\n")
 
     print("\nStart Execute all page locations per user")
-    print(execute_all_page_locations_per_user(connection, "922293838.1677754973"))
+    #print(execute_all_page_locations_per_user(connection, "922293838.1677754973"))
     #print(execute_all_course_names_from_user(connection, "922293838.1677754973"))
     print("Done Execute all page locations per user\n")
 
