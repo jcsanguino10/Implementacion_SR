@@ -27,11 +27,10 @@ def calulate_vector_cosine_similarities(user_mean: ndarray, vector_ids: list[str
 def get_tutorial_vectors(tutorial_ids: list) -> ndarray:
 	"""Get the vectors of a tutorials from csv"""
 
-	df = pd.read_csv("data/vector_collection.csv", index_col=0)
-	print(df)
-	print(df.columns)
+	df = pd.read_csv("data/vector_collection.csv", header=0)
+
 	# Get the vectors from the df that have an id in the tutorial_ids list
-	vectors = df.loc[tutorial_ids, ["id", "vector"]].to_numpy()					# TODO Fix
+	vectors = df.loc[df["id"].isin(tutorial_ids), ["id", "vector"]].to_numpy()
 
 	return vectors
 
@@ -39,29 +38,72 @@ def get_tutorial_vectors(tutorial_ids: list) -> ndarray:
 def get_ids_and_vectors_from_course_names(db_bigquery: Client, db_mongo: Database, user: str) -> list[tuple[str, float]]:
 	"""Get the ids and vectors from a list of course names"""
 
+	# Get all the course names from the courses that a user has seen
 	user_course_names = execute_all_course_names_from_user(db_bigquery, user)
 
-	# Get the tutorials from the course names
+	# Get all the courses from mongo that have the title in the user_course_names list
 	user_tutorials = get_gcf_tutorials_by_titles(db_mongo, user_course_names)
-	user_tutorial_ids = [str(tutorial["_id"]) for tutorial in user_tutorials]
-	user_tutorial_vectors: ndarray = get_tutorial_vectors(user_tutorial_ids)
-	user_vectors = [read_vector_bytes(vector[1]) for vector in user_tutorial_vectors]
-	user_mean_vec: ndarray = find_vector_average(*user_vectors)
-	user_mean_vector: ndarray = array(user_mean_vec)
+	# print(len(user_tutorials))
+	# print(user_tutorials)
 
+	print(len(user_course_names) == len(user_tutorials))
+
+	# Extract the ids of the tutorials
+	user_tutorial_ids: list[str] = [str(tutorial["_id"]) for tutorial in user_tutorials]
+	# print(len(user_tutorial_ids))
+	print(user_tutorial_ids)
+
+	# Get the vectors of the tutorials from csv
+	user_tutorial_vectors: ndarray = get_tutorial_vectors(user_tutorial_ids)
+	# print(len(user_tutorial_vectors))
+	# print(user_tutorial_vectors)
+
+	# Transform the vectors into a list of ndarrays
+	user_vectors: list[ndarray] = [read_vector_bytes(vector[1]) for vector in user_tutorial_vectors]
+	# print(len(user_vectors))
+	# print(user_vectors)
+
+	# Calculate the mean vector of the user based on all the courses the user has seen
+	user_mean_vec: ndarray = find_vector_average(*user_vectors)
+	# print(len(user_mean_vec))
+	# print(user_mean_vec)
+
+	# Transform the mean vector into a numpy array
+	user_mean_vector: ndarray = array(user_mean_vec)
+	# print(len(user_mean_vector))
+	# print(user_mean_vector)
+
+
+	# print(user_tutorial_ids)
 
 	print(len(user_tutorials) == len(user_tutorial_vectors))
 
-	all_vectors_csv: list[list[str]] = get_vector_csv()
-	all_ids = [row[0] for row in all_vectors_csv]
-	comparative_ids: list[str] = [iden for iden in all_ids if iden not in user_tutorial_vectors]
 
+
+	# Get all the info from the csv and remove the header
+	all_vectors_csv: list[list[str]] = get_vector_csv()[1:]
+
+	# Get the ids of the tutorials in the csv
+	all_ids_csv: list[str] = [row[0] for row in all_vectors_csv]
+
+	# Get the ids of the tutorials that the user has not seen
+	comparative_ids: list[str] = [iden for iden in all_ids_csv if iden not in user_tutorial_ids]
+
+	# Get all the vectors of the tutorials that the user has not seen
 	all_tutorials = get_tutorial_vectors(comparative_ids)
-	all_ids = [row[0] for row in all_vectors_csv]
-	all_vecs = [read_vector_bytes(vector[:, 1:]) for vector in all_tutorials]
+
+	# Transform the vectors into a list of ndarrays
+	all_vecs = [read_vector_bytes(vector[1]) for vector in all_tutorials]
 	all_vectors = array(all_vecs)
 
+	# Calculate the cosine similarities between the user_mean_vector and the vectors of the tutorials that the user has not seen
 	cosines = calulate_vector_cosine_similarities(user_mean_vector, comparative_ids, *all_vectors)
+
+	# Get the recommended courses titles
+	# This works by taking the first element in the cosines list and then using it to filter the all_vectors_csv list to find the course name
+	# Afterwards, since each filter element (list) has only 1 item, it is accessed and the course name is taken (index=1)
+	recommended_courses = list(map(lambda x: list(filter(lambda y: y[0] == x[0], all_vectors_csv))[0][1], cosines[:5]))
+	print(recommended_courses)
 
 	return cosines[:5]
 

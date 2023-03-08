@@ -65,7 +65,7 @@ def create_vector_csv(attributes: list[list[str]], vectors: list[str]) -> None:
 	"""Create a csv from all the attributes and vectors passed as parameters"""
 
 	with open("./data/vector_collection.csv", "w") as file:
-		file.write("id,language,vector\n")
+		file.write("id,title,language,vector\n")
 		for att, vec in zip(attributes, vectors):
 			file.write(f"{transform_attributes_to_str(att)},{vec}\n")
 
